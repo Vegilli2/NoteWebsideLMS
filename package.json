@@ -1,0 +1,25 @@
+{
+  "name": "notewebside-lms",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -n web,api -c blue,green \"npm run dev --workspace @notewebside/web\" \"npm run dev --workspace @notewebside/api\"",
+    "build": "npm run build --workspace @notewebside/web && npm run build --workspace @notewebside/api",
+    "typecheck": "npm run typecheck --workspace @notewebside/web && npm run typecheck --workspace @notewebside/api",
+    "db:generate": "prisma generate",
+    "db:validate": "prisma validate",
+    "db:push": "prisma db push"
+  },
+  "dependencies": {
+    "@prisma/client": "7.5.0"
+  },
+  "devDependencies": {
+    "concurrently": "9.2.1",
+    "dotenv": "17.2.3",
+    "prisma": "7.5.0",
+    "typescript": "5.9.3"
+  }
+}

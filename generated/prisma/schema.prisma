@@ -1,0 +1,209 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  STUDENT
+  TEACHER
+  SUPPORT
+  ADMIN
+}
+
+enum LevelCode {
+  A1
+  A2
+  B1
+  B2
+  C1
+}
+
+enum ContentType {
+  VIDEO
+  H5P
+  HTML_PACKAGE
+  DOCUMENT
+  MANUAL_ASSIGNMENT
+}
+
+enum EntitlementSourceType {
+  PURCHASE
+  TRIAL
+  ADMIN_GRANT
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum AttemptVisibility {
+  VISIBLE_TO_TEACHER
+  HIDDEN_FROM_TEACHER
+}
+
+model User {
+  id              String           @id @default(cuid())
+  email           String           @unique
+  fullName        String
+  locale          String           @default("nb")
+  firebaseUid     String?          @unique
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  roleAssignments RoleAssignment[]
+  orders          Order[]
+  entitlements    Entitlement[]
+  attempts        Attempt[]
+}
+
+model RoleAssignment {
+  id        String   @id @default(cuid())
+  userId    String
+  role      UserRole
+  scopeType String?
+  scopeId   String?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, role])
+}
+
+model Level {
+  id        String    @id @default(cuid())
+  code      LevelCode @unique
+  title     String
+  courses   Course[]
+  packages  Package[]
+  createdAt DateTime  @default(now())
+}
+
+model Course {
+  id          String          @id @default(cuid())
+  levelId     String
+  slug        String          @unique
+  title       String
+  description String
+  isPublished Boolean         @default(false)
+  level       Level           @relation(fields: [levelId], references: [id], onDelete: Restrict)
+  modules     Module[]
+  packages    PackageCourse[]
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+}
+
+model Module {
+  id          String     @id @default(cuid())
+  courseId    String
+  title       String
+  description String
+  sortOrder   Int
+  course      Course     @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  activities  Activity[]
+
+  @@index([courseId, sortOrder])
+}
+
+model Activity {
+  id                      String      @id @default(cuid())
+  moduleId                String
+  title                   String
+  description             String
+  contentType             ContentType
+  contentVersionRef       String?
+  sortOrder               Int
+  isRequiredForCompletion Boolean     @default(true)
+  passingScorePercent     Int?
+  module                  Module      @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  attempts                Attempt[]
+
+  @@index([moduleId, sortOrder])
+}
+
+model Package {
+  id                 String          @id @default(cuid())
+  levelId            String
+  slug               String          @unique
+  title              String
+  description        String
+  stripeProductId    String?         @unique
+  teacherHelpEnabled Boolean         @default(true)
+  certificateEnabled Boolean         @default(true)
+  trialDays          Int?
+  level              Level           @relation(fields: [levelId], references: [id], onDelete: Restrict)
+  packageCourses     PackageCourse[]
+  orderItems         OrderItem[]
+  entitlements       Entitlement[]
+}
+
+model PackageCourse {
+  packageId String
+  courseId  String
+  package   Package @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  course    Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@id([packageId, courseId])
+}
+
+model Order {
+  id                    String      @id @default(cuid())
+  userId                String
+  stripeCheckoutSession String?     @unique
+  stripePaymentIntentId String?     @unique
+  status                OrderStatus @default(PENDING)
+  currency              String      @default("nok")
+  totalAmountMinor      Int
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+  user                  User        @relation(fields: [userId], references: [id], onDelete: Restrict)
+  items                 OrderItem[]
+}
+
+model OrderItem {
+  id              String  @id @default(cuid())
+  orderId         String
+  packageId       String
+  unitAmountMinor Int
+  quantity        Int     @default(1)
+  order           Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  package         Package @relation(fields: [packageId], references: [id], onDelete: Restrict)
+}
+
+model Entitlement {
+  id                 String                @id @default(cuid())
+  userId             String
+  packageId          String
+  sourceType         EntitlementSourceType
+  sourceRef          String?
+  startsAt           DateTime              @default(now())
+  endsAt             DateTime?
+  teacherHelpEnabled Boolean
+  certificateEnabled Boolean
+  createdAt          DateTime              @default(now())
+  user               User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  package            Package               @relation(fields: [packageId], references: [id], onDelete: Restrict)
+
+  @@index([userId, startsAt])
+}
+
+model Attempt {
+  id         String            @id @default(cuid())
+  userId     String
+  activityId String
+  score      Float?
+  maxScore   Float?
+  passed     Boolean?
+  completed  Boolean           @default(false)
+  visibility AttemptVisibility @default(VISIBLE_TO_TEACHER)
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activity   Activity          @relation(fields: [activityId], references: [id], onDelete: Cascade)
+
+  @@index([userId, activityId, createdAt])
+}
