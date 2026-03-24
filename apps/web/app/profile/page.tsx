@@ -1,4 +1,5 @@
 import { getServerAuthSession } from "../../lib/auth-session";
+import { LogoutButton } from "../../components/logout-button";
 
 export default async function ProfilePage() {
   const session = await getServerAuthSession();
@@ -14,6 +15,7 @@ export default async function ProfilePage() {
           <a href="/portal" className="button-secondary">
             Portal
           </a>
+          {session.authenticated ? <LogoutButton /> : null}
         </nav>
       </header>
 

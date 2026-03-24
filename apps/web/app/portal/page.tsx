@@ -1,4 +1,5 @@
 import { getServerPortalSummary } from "../../lib/portal-summary";
+import { LogoutButton } from "../../components/logout-button";
 
 export default async function PortalPage() {
   const summary = await getServerPortalSummary();
@@ -19,6 +20,7 @@ export default async function PortalPage() {
           <a href="/" className="button-secondary">
             Til offentlig side
           </a>
+          {summary.authenticated ? <LogoutButton /> : null}
         </nav>
       </header>
 

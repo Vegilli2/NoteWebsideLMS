@@ -27,9 +27,12 @@ export class IdentityService {
     return {
       status: "ok",
       projectId: appConfig.firebaseProjectId,
-      credentialsPath: appConfig.firebaseAdminCredentialsPath,
+      credentialsSource: appConfig.firebaseAdminCredentialsJson ? "secret-json" : "file-path",
       signInMode: "email-password",
-      localhostReminder: "Remember to add localhost under Firebase Authentication -> Settings -> Authorized domains.",
+      environmentReminder:
+        appConfig.nodeEnv === "production"
+          ? "Remember to keep your production domain in Firebase Authentication -> Authorized domains."
+          : "Remember to add localhost under Firebase Authentication -> Settings -> Authorized domains.",
     };
   }
 }
